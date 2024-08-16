@@ -1,0 +1,28 @@
+FROM ghcr.io/martinluttap/bio-ubuntu:1.0.0 AS builder
+
+ARG VERSION
+
+ENV URL=http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v${VERSION}.zip
+
+RUN apt-get update \
+	&& apt-get install -y \
+		build-essential \
+		libfontconfig1 \
+		openjdk-11-jre-headless \
+		perl-modules \
+		wget \
+		unzip \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Example download and compile step
+ADD $URL /usr/local/bin
+RUN cd /usr/local/bin \
+	&& unzip fastqc_v${VERSION}.zip \
+	&& rm -rf fastqc_v${VERSION}.zip \
+	&& sed -i 's/kmer[[:space:]]\+ignore[[:space:]]\+1/kmer ignore 0/' $PWD/FastQC/Configuration/limits.txt \
+	&& sed -i 's/assistive_technologies/#assistive_technologies/' /etc/java-11-openjdk/accessibility.properties \
+	&& chmod 755 FastQC/fastqc \
+	&& ln -s $PWD/FastQC/fastqc /usr/local/bin/fastqc
+
+# ENTRYPOINT ["/usr/local/bin/fastqc"]
